@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Sequence
 from typing import Annotated as A
 
@@ -9,9 +10,6 @@ from ophyd_async.core import (
     SignalRW,
     StandardReadable,
     StrictEnum,
-    TriggerInfo,
-)
-from ophyd_async.core import (
     StandardReadableFormat as Format,
 )
 from ophyd_async.epics.adcore import (
@@ -20,7 +18,7 @@ from ophyd_async.epics.adcore import (
     ADWriterType,
     AreaDetector,
     NDPluginBaseIO,
-    prepare_exposures,
+    trigger_info_from_num_images,
 )
 from ophyd_async.epics.core import (
     EpicsDevice,
@@ -117,9 +115,6 @@ class XSPROIRows(StrictEnum):
     ONE_TWENTY_EIGHT = "128"
     TWO_FIFTY_SIX = "256"
 
-class XSPImageMode(StrictEnum):
-    SINGLE = "Single"
-    MULTIPLE = "Multiple"
 
 class XSPModule(EpicsDevice):
     board_temp: A[SignalR[float], PvSuffix("BoardTemp_RBV")]
@@ -211,11 +206,19 @@ class XSPTriggerLogic(DetectorTriggerLogic):
         }
 
     async def prepare_internal(self, num: int, livetime: float, deadtime: float):
-        await prepare_exposures(self.driver, num, livetime, deadtime)
+        image_mode = XSPImageMode.MULTIPLE if num != 1 else XSPImageMode.SINGLE
+        coros = [
+            self.driver.image_mode.set(image_mode),
+            self.driver.num_images.set(num),
+        ]
+        if livetime:
+            coros.append(self.driver.acquire_time.set(livetime))
+            if deadtime:
+                coros.append(self.driver.acquire_period.set(livetime + deadtime))
+        await asyncio.gather(*coros)
 
     async def default_trigger_info(self):
-        num_images = await self.driver.num_images.get_value()
-        return TriggerInfo(collections_per_event=num_images)
+        return trigger_info_from_num_images(self.driver)
 
 
 class XSPDetector(AreaDetector[XSPIO]):
