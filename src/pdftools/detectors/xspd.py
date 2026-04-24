@@ -177,9 +177,9 @@ class XSPIO(StandardReadable, ADBaseIO):
             )
             self.gating_mode = epics_signal_rw_rbv(EnabledDisabled, prefix + "GatingMode")
             self.counter_mode = epics_signal_rw_rbv(XSPCounterMode, prefix + "CounterMode")
-            self.roi_rows = epics_signal_rw_rbv(int, prefix + "ROIRows")
-            self.low_threshold = epics_signal_rw_rbv(int, prefix + "LowThreshold")
-            self.high_threshold = epics_signal_rw_rbv(int, prefix + "HighThreshold")
+            self.roi_rows = epics_signal_rw_rbv(XSPROIRows, prefix + "ROIRows")
+            self.low_threshold = epics_signal_rw_rbv(float, prefix + "LowThreshold")
+            self.high_threshold = epics_signal_rw_rbv(float, prefix + "HighThreshold")
             self.count_rate_correction = epics_signal_rw_rbv(
                 EnabledDisabled, prefix + "CountrateCorrection"
             )
