@@ -1,6 +1,6 @@
 import asyncio
 
-from bluesky.protocols import Movable, Stoppable
+from bluesky.protocols import Location, Movable, Stoppable, Locatable
 from ophyd_async.core import (
     CALCULATE_TIMEOUT,
     DEFAULT_TIMEOUT,
@@ -29,7 +29,7 @@ class LNPMode(StrictEnum):
     AUTO = "Auto"
 
 
-class LinkamT96(EpicsDevice, Movable, Stoppable, StandardReadable):
+class LinkamT96(EpicsDevice, StandardReadable, Locatable[float], Stoppable):
     def __init__(self, prefix: str, name: str):
         self.heat = epics_signal_rw(bool, prefix + "STARTHEAT", name="heat")
 
@@ -109,6 +109,13 @@ class LinkamT96(EpicsDevice, Movable, Stoppable, StandardReadable):
             )
             if not await self.ramping.get_value():
                 break
+
+    async def locate(self) -> Location[float]:
+        setpoint, temperature = await asyncio.gather(
+            self.setpoint.get_value(),
+            self.temperature.get_value(),
+        )
+        return Location(setpoint=setpoint, readback=temperature)
 
     @AsyncStatus.wrap
     async def stop(self, success: bool = True):
