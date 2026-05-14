@@ -17,13 +17,12 @@ from collections.abc import Generator
 import pytest
 from bluesky._vendor.super_state_machine.errors import TransitionError  # noqa: PLC2701
 from bluesky.run_engine import RunEngine
+from ophyd_async.core import StaticPathProvider, UUIDFilenameProvider, init_devices
+from ophyd_async.sim import SimBlobDetector, SimPointDetector
 from pytest import FixtureRequest
 from tiled.client import from_uri
 from tiled.client.container import Container
 from tiled.server import SimpleTiledServer
-
-from ophyd_async.core import init_devices, StaticPathProvider, UUIDFilenameProvider
-from ophyd_async.sim import SimPointDetector, SimBlobDetector, PatternGenerator
 
 _ALLOWED_PYTEST_TASKS = {"async_finalizer", "async_setup", "async_teardown"}
 
@@ -155,6 +154,9 @@ def sample_detectors_factory(RE: RunEngine):
     def _factory(write_path: Path) -> tuple[SimBlobDetector, SimPointDetector]:
         with init_devices():
             sim_point = SimPointDetector(None)
-            sim_blob = SimBlobDetector(StaticPathProvider(UUIDFilenameProvider(), write_path))
+            sim_blob = SimBlobDetector(
+                StaticPathProvider(UUIDFilenameProvider(), write_path)
+            )
         return sim_blob, sim_point
+
     return _factory

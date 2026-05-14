@@ -1,6 +1,6 @@
 import asyncio
 
-from bluesky.protocols import Location, Movable, Stoppable, Locatable
+from bluesky.protocols import Locatable, Location, Stoppable
 from ophyd_async.core import (
     CALCULATE_TIMEOUT,
     DEFAULT_TIMEOUT,

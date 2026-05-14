@@ -1,10 +1,11 @@
 import asyncio
 
 import pytest
-from pdftools.sample_environment import LinkamT96
-from ophyd_async.core import init_devices, set_mock_value, callback_on_mock_put
 from bluesky.run_engine import RunEngine
-from bluesky import plan_stubs as bps
+from ophyd_async.core import init_devices, set_mock_value
+
+from pdftools.sample_environment import LinkamT96
+
 
 @pytest.fixture
 def linkam(RE: RunEngine):
@@ -12,10 +13,13 @@ def linkam(RE: RunEngine):
         linkam = LinkamT96(prefix="TEST:LINKAM:", name="linkam")
     return linkam
 
+
 async def test_moving_linkam_fails_w_rr_zero(linkam: LinkamT96):
     """Test that moving the Linkam fails if the ramp rate is set to zero."""
     set_mock_value(linkam.ramp_rate, 0)
-    with pytest.raises(ValueError, match="Ramp rate cannot be zero when calculating timeout."):
+    with pytest.raises(
+        ValueError, match="Ramp rate cannot be zero when calculating timeout."
+    ):
         await linkam.set(100)
 
 
@@ -37,7 +41,7 @@ async def test_moving_linkam_emits_updates(linkam: LinkamT96):
 
     updates = []
     status = linkam.set(target)
-    status.watch(lambda **kwargs: updates.append(kwargs))
+    status.watch(lambda **kwargs: updates.append(kwargs))  # type: ignore
     ramp_task = asyncio.create_task(ramp_temperature())
     await status
     await ramp_task
