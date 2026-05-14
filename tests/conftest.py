@@ -22,6 +22,9 @@ from tiled.client import from_uri
 from tiled.client.container import Container
 from tiled.server import SimpleTiledServer
 
+from ophyd_async.core import init_devices, StaticPathProvider, UUIDFilenameProvider
+from ophyd_async.sim import SimPointDetector, SimBlobDetector, PatternGenerator
+
 _ALLOWED_PYTEST_TASKS = {"async_finalizer", "async_setup", "async_teardown"}
 
 
@@ -136,3 +139,22 @@ def tiled_client(tmp_path: Path) -> Generator[tuple[Path, Container], None, None
     yield tmp_path / "data", client
     client.context.close()
     server.close()
+
+
+@pytest.fixture
+def output_tiled_client(tmp_path: Path) -> Generator[Container, None, None]:
+    server = SimpleTiledServer(tmp_path / "output_tiled_data")
+    client = from_uri(server.uri)
+    yield client
+    client.context.close()
+    server.close()
+
+
+@pytest.fixture
+def sample_detectors_factory(RE: RunEngine):
+    def _factory(write_path: Path) -> tuple[SimBlobDetector, SimPointDetector]:
+        with init_devices():
+            sim_point = SimPointDetector(None)
+            sim_blob = SimBlobDetector(StaticPathProvider(UUIDFilenameProvider(), write_path))
+        return sim_blob, sim_point
+    return _factory
